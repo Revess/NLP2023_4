@@ -12,6 +12,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from linear import Linear
+
 class ParserModel(nn.Module):
     """ Feedforward neural network with an embedding layer and two hidden layers.
     The ParserModel will predict which transition should be applied to a
@@ -46,6 +48,9 @@ class ParserModel(nn.Module):
         self.embed_size = embeddings.shape[1]
         self.hidden_size = hidden_size
         self.embeddings = nn.Parameter(torch.tensor(embeddings))
+        self.weights = nn.Parameter(torch.tensor([1.0,1.0,1.0,1.0], requires_grad=True))
+        self.bias = nn.Parameter(torch.tensor([1.0,1.0,1.0,1.0], requires_grad=True))
+        self.linear = Linear(n_features, hidden_size, self.weights, self.bias)
 
         ### YOUR CODE HERE (~9-10 Lines)
         ### TODO:
@@ -105,11 +110,11 @@ class ParserModel(nn.Module):
         ###     Gather: https://pytorch.org/docs/stable/torch.html#torch.gather
         ###     View: https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
         ###     Flatten: https://pytorch.org/docs/stable/generated/torch.flatten.html
-
+        pass
 
 
         ### END YOUR CODE
-        return x
+        #return x
 
 
     def forward(self, w):
@@ -136,6 +141,8 @@ class ParserModel(nn.Module):
         ###     Complete the forward computation as described in write-up. In addition, include a dropout layer
         ###     as decleared in `__init__` after ReLU function.
         ###
+        w = self.linear(w)
+        return w
         ### Note: We do not apply the softmax to the logits here, because
         ### the loss function (torch.nn.CrossEntropyLoss) applies it more efficiently.
         ###
