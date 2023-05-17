@@ -32,7 +32,8 @@ class ParserModel(nn.Module):
         - For further documentation on "nn.Module" please see https://pytorch.org/docs/stable/nn.html.
     """
     def __init__(self, embeddings, n_features=36,
-        hidden_size=200, n_classes=3, dropout_prob=0.5):
+        hidden_size=200, n_classes=4, # used to be three. @bas why?
+                 dropout_prob=0.5):
         """ Initialize the parser model.
 
         @param embeddings (ndarray): word embeddings (num_words, embedding_size)
@@ -48,9 +49,7 @@ class ParserModel(nn.Module):
         self.embed_size = embeddings.shape[1]
         self.hidden_size = hidden_size
         self.embeddings = nn.Parameter(torch.tensor(embeddings))
-        self.weights = nn.Parameter(torch.tensor([1.0,1.0,1.0,1.0], requires_grad=True))
-        self.bias = nn.Parameter(torch.tensor([1.0,1.0,1.0,1.0], requires_grad=True))
-        self.linear = Linear(n_features, hidden_size, self.weights, self.bias)
+        self.linear = Linear(n_features, n_classes)
 
         ### YOUR CODE HERE (~9-10 Lines)
         ### TODO:
@@ -141,6 +140,8 @@ class ParserModel(nn.Module):
         ###     Complete the forward computation as described in write-up. In addition, include a dropout layer
         ###     as decleared in `__init__` after ReLU function.
         ###
+        print(self.linear.weights.shape)
+        print(w.shape)
         w = self.linear(w)
         return w
         ### Note: We do not apply the softmax to the logits here, because
@@ -173,6 +174,8 @@ if __name__ == "__main__":
 
     def check_forward():
         inputs =torch.randint(0, 100, (4, 36), dtype=torch.long)
+        print(inputs)
+        print(inputs.shape)
         out = model(inputs)
         expected_out_shape = (4, 3)
         assert out.shape == expected_out_shape, "The result shape of forward is: " + repr(out.shape) + \
