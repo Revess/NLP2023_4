@@ -32,7 +32,7 @@ class ParserModel(nn.Module):
         - For further documentation on "nn.Module" please see https://pytorch.org/docs/stable/nn.html.
     """
     def __init__(self, embeddings, n_features=36,
-        hidden_size=200, n_classes=4, # used to be three. @bas why?
+        hidden_size=200, n_classes=3,
                  dropout_prob=0.5):
         """ Initialize the parser model.
 
@@ -50,13 +50,14 @@ class ParserModel(nn.Module):
         self.hidden_size = hidden_size
         self.embeddings = nn.Parameter(torch.tensor(embeddings))
         self.linear = Linear(n_features, n_classes)
+        self.dropout = nn.Dropout(self.dropout_prob)
 
         ### YOUR CODE HERE (~9-10 Lines)
         ### TODO:
         ###     1) Declare `self.embed_to_hidden_weight` and `self.embed_to_hidden_bias` as `nn.Parameter`.
         ###        Initialize weight with the `nn.init.xavier_uniform_` function and bias with `nn.init.uniform_`
         ###        with default parameters.
-        ###     2) Construct `self.dropout` layer.
+        ###     2) Construct `self.dropout` layer. done
         ###     3) Declare `self.hidden_to_logits_weight` and `self.hidden_to_logits_bias` as `nn.Parameter`.
         ###        Initialize weight with the `nn.init.xavier_uniform_` function and bias with `nn.init.uniform_`
         ###        with default parameters.
@@ -140,8 +141,8 @@ class ParserModel(nn.Module):
         ###     Complete the forward computation as described in write-up. In addition, include a dropout layer
         ###     as decleared in `__init__` after ReLU function.
         ###
-        print(self.linear.weights.shape)
-        print(w.shape)
+        w = w.to(torch.float32)
+        w = self.dropout(w)
         w = self.linear(w)
         return w
         ### Note: We do not apply the softmax to the logits here, because
@@ -174,8 +175,6 @@ if __name__ == "__main__":
 
     def check_forward():
         inputs =torch.randint(0, 100, (4, 36), dtype=torch.long)
-        print(inputs)
-        print(inputs.shape)
         out = model(inputs)
         expected_out_shape = (4, 3)
         assert out.shape == expected_out_shape, "The result shape of forward is: " + repr(out.shape) + \
