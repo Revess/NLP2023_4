@@ -9,18 +9,17 @@ import torch.nn as nn
 class Linear(nn.Module):
     def __init__(self, size_in, size_out):
         super().__init__()
-        weights = torch.tensor(torch.zeros(size_out, size_in),dtype=torch.float32)
-        bias = torch.tensor(size_out, dtype=torch.float32)
+        weights = torch.rand((size_in, size_out),dtype=torch.float32) #initialize the weights randomly of shape, input by output (you could do it like a normal dist)
+        bias = torch.zeros((size_out), dtype=torch.float32) #initialize the bias as zero (common practise) 
         self.weights = nn.Parameter(weights, requires_grad=True)
         self.bias = nn.Parameter(bias)
         self.size_in, self.size_out = size_in, size_out
 
 
     def forward(self, x):
-        x = x * self.weights
+        x = x.matmul(self.weights)
         x = x + self.bias
         return x
-
 
 # class BasicModel(nn.Module):
 #     def __init__(self):
