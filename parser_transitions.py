@@ -7,6 +7,7 @@ Authors: Sahil Chopra, Haoshen Hong, Nathan Schneider, Lucia Donatelli
 """
 
 import sys
+from tqdm import tqdm
 
 class PartialParse(object):
     def __init__(self, sentence):
@@ -28,11 +29,11 @@ class PartialParse(object):
                                 left-arc, and right-arc transitions. You can assume the provided
                                 transition is a legal transition.
         """
-        if transition == "S":
+        if transition == "S" and len(self.buffer) > 0:
             self.stack.append(self.buffer.pop(0))
-        elif transition == "LA":
+        elif transition == "LA" and len(self.stack) > 1:
             self.dependencies.append((self.stack[-1], self.stack.pop(-2)))
-        elif transition == "RA":
+        elif transition == "RA" and len(self.stack) > 1:
             self.dependencies.append((self.stack[-2], self.stack.pop(-1)))
 
     def parse(self, transitions):
@@ -44,7 +45,7 @@ class PartialParse(object):
                                                         parsing the sentence. Represented as a list of
                                                         tuples where each tuple is of the form (head, dependent).
         """
-        for transition in transitions:
+        for transition in tqdm(transitions):
             self.parse_step(transition)
         return self.dependencies
 
@@ -74,10 +75,13 @@ def minibatch_parse(sentences, model, batch_size):
     while len(unfinished_parses) > 0:
         minibatch = unfinished_parses[:batch_size]
         pred = model.predict(minibatch)
+        index_to_remove = []
         for bnum, parser in enumerate(minibatch):
             parser.parse_step(pred[bnum])
-            if len(parser.buffer) == 0 and len(parser.stack) == 1:
-                unfinished_parses.pop(bnum)
+            if len(parser.buffer) == 0 and len(parser.stack) == 1 and bnum not in index_to_remove:
+                index_to_remove.append(bnum)
+        index_to_remove.sort(reverse=True)
+        [unfinished_parses.pop(i) for i in index_to_remove]
     [dependencies.append(parser.dependencies) for parser in partial_parses]
     return dependencies
 
