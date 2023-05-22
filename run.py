@@ -80,9 +80,8 @@ def train_for_epoch(parser, train_data, dev_data, optimizer, loss_func, batch_si
             loss = 0. # store loss for this batch here
             train_x = torch.from_numpy(train_x).long()
             train_y = torch.from_numpy(train_y.nonzero()[1]).long()
-            
+
             logits = parser.model(train_x) #Predict using the model
-            logits = nn.functional.softmax(logits, dim=1) #Apply softmax optimization
             loss = loss_func(logits, train_y) # Calculate the loss
             loss.backward() #Backwards calculations over the gradients
             optimizer.step() #Apply the optimizer to the model weights
