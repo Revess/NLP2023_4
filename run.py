@@ -39,7 +39,9 @@ def train(parser, train_data, dev_data, output_path, batch_size=1024, n_epochs=1
     """
     best_dev_UAS = 0
 
+    # Add adam optimizer
     optimizer = optim.Adam(params=parser.model.parameters(), lr=lr)
+    # Add CE lossfn
     loss_func = nn.CrossEntropyLoss()
 
     for epoch in range(n_epochs):
@@ -78,10 +80,13 @@ def train_for_epoch(parser, train_data, dev_data, optimizer, loss_func, batch_si
             loss = 0. # store loss for this batch here
             train_x = torch.from_numpy(train_x).long()
             train_y = torch.from_numpy(train_y.nonzero()[1]).long()
-            logits = parser.model(train_x)
-            loss = loss_func(logits, train_y)
-            loss.backward()
-            optimizer.step()
+            
+            logits = parser.model(train_x) #Predict using the model
+            logits = nn.functional.softmax(logits, dim=1) #Apply softmax optimization
+            loss = loss_func(logits, train_y) # Calculate the loss
+            loss.backward() #Backwards calculations over the gradients
+            optimizer.step() #Apply the optimizer to the model weights
+
             prog.update(1)
             loss_meter.update(loss.item())
 

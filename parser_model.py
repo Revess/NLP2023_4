@@ -12,8 +12,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from linear import Linear
-
 class ParserModel(nn.Module):
     """ Feedforward neural network with an embedding layer and two hidden layers.
     The ParserModel will predict which transition should be applied to a
@@ -50,16 +48,19 @@ class ParserModel(nn.Module):
         self.hidden_size = hidden_size
         self.embeddings = nn.Parameter(torch.tensor(embeddings))
 
+        # Initialize the weights and biases
+        # Input size of the model is n_features*embed_size
         self.embed_to_hidden_weight = nn.Parameter(torch.zeros((self.n_features*self.embed_size, self.hidden_size), requires_grad=True))
         self.embed_to_hidden_bias = nn.Parameter(torch.zeros((self.hidden_size), requires_grad=True))
         self.hidden_to_logits_weight = nn.Parameter(torch.zeros((self.hidden_size, self.n_classes), requires_grad=True))
         self.hidden_to_logits_bias = nn.Parameter(torch.zeros((self.n_classes), requires_grad=True))
+        # Initialize the weights as uniform
         nn.init.xavier_uniform_(self.embed_to_hidden_weight)
         nn.init.uniform_(self.embed_to_hidden_bias)
         nn.init.xavier_uniform_(self.hidden_to_logits_weight)
         nn.init.uniform_(self.hidden_to_logits_bias)
 
-        self.dropout = nn.Dropout(self.dropout_prob)
+        self.dropout = nn.Dropout(self.dropout_prob) #Create a dropout layer
 
     def embedding_lookup(self, w):
         """ Utilize `w` to select embeddings from embedding matrix `self.embeddings`
@@ -68,6 +69,8 @@ class ParserModel(nn.Module):
             @return x (Tensor): tensor of embeddings for words represented in w
                                 (batch_size, n_features * embed_size)
         """
+        # Since w is a list of indexes we can give it to the embeddings and slice based on w.
+        # Use view to reshape the input as B_size, n_features*embed_size
         return self.embeddings[w].view(size=(w.shape[0], self.n_features*self.embed_size))
     
     def forward(self, w):
@@ -89,15 +92,17 @@ class ParserModel(nn.Module):
         @return logits (Tensor): tensor of predictions (output after applying the layers of the network)
                                  without applying softmax (batch_size, n_classes)
         """
+        # Pass the input through the embedding lookup
         w = self.embedding_lookup(w)
         # Lin1
-        w = w.matmul(self.embed_to_hidden_weight)
-        w = w + self.embed_to_hidden_bias
-        w = nn.functional.relu(w)
-        w = self.dropout(w)
+        w = w.matmul(self.embed_to_hidden_weight) #Matrix multiplication of inputs @ weights
+        w = w + self.embed_to_hidden_bias #Add bias
+        w = nn.functional.relu(w) #Do activation function
+        w = self.dropout(w) #Add dropout
+
         # Lin2
-        w = w.matmul(self.hidden_to_logits_weight)
-        logits = w + self.hidden_to_logits_bias
+        w = w.matmul(self.hidden_to_logits_weight) #Matrix multiplication of inputs @ weights
+        logits = w + self.hidden_to_logits_bias #Add bias
         return logits
 
 if __name__ == "__main__":

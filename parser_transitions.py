@@ -18,9 +18,9 @@ class PartialParse(object):
         """
         self.sentence = sentence
 
-        self.stack = ["ROOT"]
-        self.buffer = [word for word in sentence]
-        self.dependencies = []
+        self.stack = ["ROOT"] #Init the stack as a list with ROOT as root word
+        self.buffer = [word for word in sentence] #Init the buffer and fill it with the sentence
+        self.dependencies = [] #Init the dependencies
 
     def parse_step(self, transition):
         """Performs a single parse step by applying the given transition to this partial parse
@@ -29,12 +29,13 @@ class PartialParse(object):
                                 left-arc, and right-arc transitions. You can assume the provided
                                 transition is a legal transition.
         """
+        # Check which transition is used and make sure the buffer or the stack are not too small
         if transition == "S" and len(self.buffer) > 0:
-            self.stack.append(self.buffer.pop(0))
+            self.stack.append(self.buffer.pop(0)) #Take first item from the buffer and add it to the top of the stack
         elif transition == "LA" and len(self.stack) > 1:
-            self.dependencies.append((self.stack[-1], self.stack.pop(-2)))
+            self.dependencies.append((self.stack[-1], self.stack.pop(-2))) #Remove the second item from the stack and create a dependency between the first and second item of the stack
         elif transition == "RA" and len(self.stack) > 1:
-            self.dependencies.append((self.stack[-2], self.stack.pop(-1)))
+            self.dependencies.append((self.stack[-2], self.stack.pop(-1))) #Remove the first item from the stack and create a dependency between the second and first word
 
     def parse(self, transitions):
         """Applies the provided transitions to this PartialParse
@@ -70,21 +71,20 @@ def minibatch_parse(sentences, model, batch_size):
     """
     dependencies = []
 
-    partial_parses = [PartialParse(sentence) for sentence in sentences]
-    unfinished_parses = partial_parses[:]
-    while len(unfinished_parses) > 0:
-        minibatch = unfinished_parses[:batch_size]
-        pred = model.predict(minibatch)
-        index_to_remove = []
-        for bnum, parser in enumerate(minibatch):
-            parser.parse_step(pred[bnum])
-            if len(parser.buffer) == 0 and len(parser.stack) == 1 and bnum not in index_to_remove:
+    partial_parses = [PartialParse(sentence) for sentence in sentences] # Initialize a list of partial parsers
+    unfinished_parses = partial_parses[:] # Make a shallow copy
+    while len(unfinished_parses) > 0: #Keep parsing until unfinished list is empty
+        minibatch = unfinished_parses[:batch_size] #Take a minibatch of batchsize
+        pred = model.predict(minibatch) #Use the model to predict
+        index_to_remove = [] # A simple list to store indexes to remove later on
+        for bnum, parser in enumerate(minibatch): #Iterate over the minibatch and its index
+            parser.parse_step(pred[bnum]) #Parse the index based on the model prediction
+            if len(parser.buffer) == 0 and len(parser.stack) == 1 and bnum not in index_to_remove: # If the parser is done (aka buffer is empty) then remove it from the unfinished parse
                 index_to_remove.append(bnum)
-        index_to_remove.sort(reverse=True)
-        [unfinished_parses.pop(i) for i in index_to_remove]
-    [dependencies.append(parser.dependencies) for parser in partial_parses]
+        index_to_remove.sort(reverse=True) #Sort in reverse order for clean removing
+        [unfinished_parses.pop(i) for i in index_to_remove] #Remove indexes from unfinished parses
+    [dependencies.append(parser.dependencies) for parser in partial_parses] #Get all dependencies from the parsers
     return dependencies
-
 
 def test_step(name, transition, stack, buf, deps,
               ex_stack, ex_buf, ex_deps):
